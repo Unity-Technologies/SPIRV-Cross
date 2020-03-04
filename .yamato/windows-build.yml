@@ -1,4 +1,4 @@
-name: "Win - Build & Test DXC"
+name: "Win - Build SPIRV-Cross"
 agent:
     type: Unity::VM
     image: sdet/scripting-toolbox-vs2015
