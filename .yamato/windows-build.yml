@@ -2,7 +2,7 @@ name: "Win - Build SPIRV-Cross"
 agent:
     type: Unity::VM
     image: sdet/scripting-toolbox-vs2015
-    flavor: b1.medium
+    flavor: b1.small
     
 interpreter: powershell    
 commands:

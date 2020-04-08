@@ -1,0 +1,22 @@
+name: "Linux - Build SPIRV-Cross"
+agent:
+    type: Unity::VM
+    image: cds-ops/ubuntu-18.04-katana-agent
+    flavor: b1.small
+    
+commands:
+        - sudo apt-get install ninja-build
+        - |
+            export CC=/usr/bin/cc
+            export CXX=/usr/bin/g++
+            cd ../
+            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON
+            cd SPIRV-Cross
+            cmake --build _builds --config Release
+        - |
+            mkdir spirv-cross
+            cp "_builds/libspirv-cross-c-shared.so" spirv-cross
+artifacts:
+    builds:
+      paths:
+        - "spirv-cross/**"
