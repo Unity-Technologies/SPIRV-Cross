@@ -1,0 +1,26 @@
+name: "Mac - Build SPIRV-Cross"
+agent:
+    type: Unity::VM::osx
+    image: slough-ops/macos-10.14-xcode:latest
+    flavor: b1.small
+
+commands: 
+        - brew install cmake
+        - brew install ninja
+        - |
+            export CC=`xcrun -find cc`
+            export CXX=`xcrun -find c++`
+            cd ../
+            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=OFF
+            cd SPIRV-Cross
+            cmake --build _builds --config Release
+        - |
+            cd _builds
+            libtool -static -o spirv-cross.a libspirv-cross-c.a libspirv-cross-core.a libspirv-cross-cpp.a libspirv-cross-glsl.a libspirv-cross-hlsl.a libspirv-cross-msl.a libspirv-cross-reflect.a libspirv-cross-util.a
+            cd ../
+            mkdir spirv-cross
+            cp "_builds/spirv-cross.a" spirv-cross
+artifacts:
+    builds:
+      paths:
+        - "spirv-cross/**"
