@@ -1,7 +1,7 @@
 name: "Mac - Build SPIRV-Cross"
 agent:
     type: Unity::VM::osx
-    image: slough-ops/macos-10.14-xcode:latest
+    image: mobile/macos-10.15-testing:latest
     flavor: b1.small
 
 commands: 
