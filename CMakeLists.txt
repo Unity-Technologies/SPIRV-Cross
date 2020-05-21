@@ -23,6 +23,8 @@ endif()
 project(SPIRV-Cross LANGUAGES CXX C)
 enable_testing()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.12")
+
 include(GNUInstallDirs)
 
 option(SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS "Instead of throwing exceptions assert" OFF)
