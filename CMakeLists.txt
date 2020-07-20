@@ -101,7 +101,7 @@ if (WIN32)
 endif()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR ((${CMAKE_CXX_COMPILER_ID} MATCHES "Clang") AND NOT MSVC))
-	set(spirv-compiler-options ${spirv-compiler-options} -Wall -Wextra -Wshadow)
+	set(spirv-compiler-options ${spirv-compiler-options} -Wall -Wextra -Wshadow -Wno-deprecated-declarations)
 	if (SPIRV_CROSS_MISC_WARNINGS)
 		if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
 			set(spirv-compiler-options ${spirv-compiler-options} -Wshorten-64-to-32)
@@ -325,7 +325,7 @@ if (SPIRV_CROSS_STATIC)
 endif()
 
 set(spirv-cross-abi-major 0)
-set(spirv-cross-abi-minor 33)
+set(spirv-cross-abi-minor 35)
 set(spirv-cross-abi-patch 0)
 
 if (SPIRV_CROSS_SHARED)
