@@ -23,7 +23,10 @@ endif()
 project(SPIRV-Cross LANGUAGES CXX C)
 enable_testing()
  
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.12")
+if(APPLE)
+	message(STATUS "Adding C++ compiler flag: -mmacosx-version-min=10.12")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.12")
+endif()
 
 include(GNUInstallDirs)
 
