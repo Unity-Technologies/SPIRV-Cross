@@ -568,6 +568,13 @@ void CompilerHLSL::emit_builtin_outputs_in_struct()
 			semantic = legacy ? "POSITION" : "SV_Position";
 			break;
 
+		case BuiltInSampleMask:
+			if (hlsl_options.shader_model < 41 || execution.model != ExecutionModelFragment)
+				SPIRV_CROSS_THROW("Sample Mask output is only supported in PS 4.1 or higher.");
+			type = "uint";
+			semantic = "SV_Coverage";
+			break;
+
 		case BuiltInFragDepth:
 			type = "float";
 			if (legacy)
@@ -671,6 +678,13 @@ void CompilerHLSL::emit_builtin_inputs_in_struct()
 				SPIRV_CROSS_THROW("Sample ID not supported in SM 3.0 or lower.");
 			type = "uint";
 			semantic = "SV_SampleIndex";
+			break;
+
+		case BuiltInSampleMask:
+			if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModelFragment)
+				SPIRV_CROSS_THROW("Sample Mask input is only supported in PS 5.0 or higher.");
+			type = "uint";
+			semantic = "SV_Coverage";
 			break;
 
 		case BuiltInGlobalInvocationId:
@@ -957,7 +971,9 @@ std::string CompilerHLSL::builtin_to_glsl(spv::BuiltIn builtin, spv::StorageClas
 
 		auto &var = get<SPIRVariable>(num_workgroups_builtin);
 		auto &type = get<SPIRType>(var.basetype);
-		return sanitize_underscores(join(to_name(num_workgroups_builtin), "_", get_member_name(type.self, 0)));
+		auto ret = join(to_name(num_workgroups_builtin), "_", get_member_name(type.self, 0));
+		ParsedIR::sanitize_underscores(ret);
+		return ret;
 	}
 	case BuiltInPointCoord:
 		// Crude hack, but there is no real alternative. This path is only enabled if point_coord_compat is set.
@@ -1064,13 +1080,15 @@ void CompilerHLSL::emit_builtin_variables()
 			type = "float";
 			break;
 
+		case BuiltInSampleMask:
+			type = "int";
+			break;
+
 		default:
 			SPIRV_CROSS_THROW(join("Unsupported builtin in HLSL: ", unsigned(builtin)));
 		}
 
 		StorageClass storage = active_input_builtins.get(i) ? StorageClassInput : StorageClassOutput;
-		// FIXME: SampleMask can be both in and out with sample builtin,
-		// need to distinguish that when we add support for that.
 
 		if (type)
 		{
@@ -1078,6 +1096,13 @@ void CompilerHLSL::emit_builtin_variables()
 				statement("static ", type, " ", builtin_to_glsl(builtin, storage), "[", array_size, "];");
 			else
 				statement("static ", type, " ", builtin_to_glsl(builtin, storage), ";");
+		}
+
+		// SampleMask can be both in and out with sample builtin, in this case we have already
+		// declared the input variable and we need to add the output one now.
+		if (builtin == BuiltInSampleMask && storage == StorageClassInput && this->active_output_builtins.get(i))
+		{
+			statement("static ", type, " ", this->builtin_to_glsl(builtin, StorageClassOutput), ";");
 		}
 	});
 
@@ -2053,7 +2078,9 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 				add_member_name(type, i);
 				auto backup_name = get_member_name(type.self, i);
 				auto member_name = to_member_name(type, i);
-				set_member_name(type.self, i, sanitize_underscores(join(to_name(var.self), "_", member_name)));
+				member_name = join(to_name(var.self), "_", member_name);
+				ParsedIR::sanitize_underscores(member_name);
+				set_member_name(type.self, i, member_name);
 				emit_struct_member(type, member, i, "");
 				set_member_name(type.self, i, backup_name);
 				i++;
@@ -2134,8 +2161,9 @@ void CompilerHLSL::emit_push_constant_block(const SPIRVariable &var)
 					add_member_name(type, constant_index);
 					auto backup_name = get_member_name(type.self, i);
 					auto member_name = to_member_name(type, i);
-					set_member_name(type.self, constant_index,
-					                sanitize_underscores(join(to_name(var.self), "_", member_name)));
+					member_name = join(to_name(var.self), "_", member_name);
+					ParsedIR::sanitize_underscores(member_name);
+					set_member_name(type.self, constant_index, member_name);
 					emit_struct_member(type, member, i, "", layout.start);
 					set_member_name(type.self, constant_index, backup_name);
 
@@ -2373,7 +2401,11 @@ void CompilerHLSL::emit_hlsl_entry_point()
 			if (legacy)
 				statement(builtin, " = stage_input.", builtin, " + float4(0.5f, 0.5f, 0.0f, 0.0f);");
 			else
+			{
 				statement(builtin, " = stage_input.", builtin, ";");
+				// ZW are undefined in D3D9, only do this fixup here.
+				statement(builtin, ".w = 1.0 / ", builtin, ".w;");
+			}
 			break;
 
 		case BuiltInVertexId:
@@ -5563,6 +5595,8 @@ void CompilerHLSL::validate_shader_model()
 
 string CompilerHLSL::compile()
 {
+	ir.fixup_reserved_names();
+
 	// Do not deal with ES-isms like precision, older extensions and such.
 	options.es = false;
 	options.version = 450;
@@ -5699,4 +5733,9 @@ void CompilerHLSL::set_hlsl_force_storage_buffer_as_uav(uint32_t desc_set, uint3
 {
 	SetBindingPair pair = { desc_set, binding };
 	force_uav_buffer_bindings.insert(pair);
+}
+
+bool CompilerHLSL::builtin_translates_to_nonarray(spv::BuiltIn builtin) const
+{
+	return (builtin == BuiltInSampleMask);
 }

@@ -280,6 +280,22 @@ def cross_compile_msl(shader, spirv, opt, iterations, paths):
         msl_args.append('6')
         msl_args.append('other')
         msl_args.append('4')
+    if '.multi-patch.' in shader:
+        msl_args.append('--msl-multi-patch-workgroup')
+        # Arbitrary for testing purposes.
+        msl_args.append('--msl-shader-input')
+        msl_args.append('0')
+        msl_args.append('any32')
+        msl_args.append('3')
+        msl_args.append('--msl-shader-input')
+        msl_args.append('1')
+        msl_args.append('any16')
+        msl_args.append('2')
+    if '.for-tess.' in shader:
+        msl_args.append('--msl-vertex-for-tessellation')
+    if '.fixed-sample-mask.' in shader:
+        msl_args.append('--msl-additional-fixed-sample-mask')
+        msl_args.append('0x00000022')
 
     subprocess.check_call(msl_args)
 
@@ -485,6 +501,8 @@ def cross_compile(shader, vulkan, spirv, invalid_spirv, eliminate, is_legacy, fl
         extra_args += ['--glsl-remap-ext-framebuffer-fetch', '3', '3']
     if '.zero-initialize.' in shader:
         extra_args += ['--force-zero-initialized-variables']
+    if '.force-flattened-io.' in shader:
+        extra_args += ['--glsl-force-flattened-io-blocks']
 
     spirv_cross_path = paths.spirv_cross
 
