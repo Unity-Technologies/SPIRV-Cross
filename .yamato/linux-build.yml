@@ -16,7 +16,9 @@ commands:
         - |
             cd _builds
             ls
-            ar rcs spirv-cross.a libspirv-cross-c.a libspirv-cross-core.a libspirv-cross-cpp.a libspirv-cross-glsl.a libspirv-cross-hlsl.a libspirv-cross-msl.a libspirv-cross-reflect.a libspirv-cross-util.a
+            for i in *.a; do ar -x "$i"; done
+            ls
+            ar -cq spirv-cross.a *.o
             cd ../
             mkdir spirv-cross
             cp "_builds/spirv-cross.a" spirv-cross
