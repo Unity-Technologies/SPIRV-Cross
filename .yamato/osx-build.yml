@@ -1,25 +1,35 @@
-name: "Mac - Build SPIRV-Cross"
+name: "Mac - Build SPIRV-Cross x64 + arm64"
 agent:
     type: Unity::VM::osx
-    image: mobile/macos-10.15-testing:latest
-    flavor: b1.small
+    image: platform-foundation/mac-bokken:latest
+    flavor: b1.medium
 
-commands: 
-        - brew install cmake
-        - brew install ninja
+commands:
         - |
-            export CC=`xcrun -find cc`
-            export CXX=`xcrun -find c++`
             cd ../
-            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=OFF
-            cd SPIRV-Cross
-            cmake --build _builds --config Release
+            export APPLE_X64_FLAGS="-target x86_64-apple-macos10.12"
+            cmake -HSPIRV-Cross -BSPIRV-Cross/build/x64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=OFF -DCMAKE_CXX_FLAGS="${APPLE_X64_FLAGS}" -DCMAKE_C_FLAGS="${APPLE_X64_FLAGS}"
+            cd SPIRV-Cross/build/x64
+            cmake --build . --config Release
         - |
-            cd _builds
+            cd build/x64
             libtool -static -o spirv-cross.a libspirv-cross-c.a libspirv-cross-core.a libspirv-cross-cpp.a libspirv-cross-glsl.a libspirv-cross-hlsl.a libspirv-cross-msl.a libspirv-cross-reflect.a libspirv-cross-util.a
+            cd ../../
+            mkdir -p spirv-cross/macos/x64
+            cp build/x64/spirv-cross.a spirv-cross/macos/x64
+        - |
             cd ../
-            mkdir spirv-cross
-            cp "_builds/spirv-cross.a" spirv-cross
+            export APPLE_ARM64_FLAGS="-target arm64-apple-macos11"
+            cmake -HSPIRV-Cross -BSPIRV-Cross/build/arm64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=OFF -DCMAKE_CXX_FLAGS="${APPLE_ARM64_FLAGS}" -DCMAKE_C_FLAGS="${APPLE_ARM64_FLAGS}"
+            cd SPIRV-Cross/build/arm64
+            cmake --build . --config Release
+        - |
+            cd build/arm64
+            libtool -static -o spirv-cross.a libspirv-cross-c.a libspirv-cross-core.a libspirv-cross-cpp.a libspirv-cross-glsl.a libspirv-cross-hlsl.a libspirv-cross-msl.a libspirv-cross-reflect.a libspirv-cross-util.a
+            cd ../../
+            mkdir -p spirv-cross/macos/arm64
+            cp build/arm64/spirv-cross.a spirv-cross/macos/arm64
+
 artifacts:
     builds:
       paths:
