@@ -5,6 +5,7 @@ agent:
     flavor: b1.medium
 
 commands:
+        - brew install cmake
         - |
             cd ../
             export APPLE_X64_FLAGS="-target x86_64-apple-macos10.12"
