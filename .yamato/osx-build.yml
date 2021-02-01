@@ -29,6 +29,9 @@ commands:
             cd ../../
             mkdir -p spirv-cross/macos/arm64
             cp build/arm64/spirv-cross.a spirv-cross/macos/arm64
+        - |
+            echo "Obtained from https://github.com/Unity-Technologies/SPIRV-Cross" > spirv-cross/version.txt
+            git rev-parse HEAD >> spirv-cross/version.txt
 
 artifacts:
     builds:

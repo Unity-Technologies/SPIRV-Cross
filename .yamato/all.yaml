@@ -1,0 +1,5 @@
+name: Build SPIRV-Cross - all targets
+dependencies:
+    - .yamato/linux-build.yml
+    - .yamato/macos-build.yml
+    - .yamato/windows-build.yml
