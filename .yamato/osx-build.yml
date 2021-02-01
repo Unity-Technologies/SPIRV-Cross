@@ -1,14 +1,14 @@
 name: "Mac - Build SPIRV-Cross x64 + arm64"
 agent:
     type: Unity::VM::osx
-    image: platform-foundation/mac-bokken:latest
+    image: desktop/unity-macos-10.15-xcode-12.2:stable
     flavor: b1.medium
 
 commands:
         - |
             cd ../
             export APPLE_X64_FLAGS="-target x86_64-apple-macos10.12"
-            export OSX_SYSROOT="/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.0.sdk"
+            export OSX_SYSROOT="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.0.sdk"
             cmake -HSPIRV-Cross -BSPIRV-Cross/build/x64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=OFF -DCMAKE_CXX_FLAGS="${APPLE_X64_FLAGS}" -DCMAKE_C_FLAGS="${APPLE_X64_FLAGS}" -DCMAKE_OSX_SYSROOT="${OSX_SYSROOT}"
             cd SPIRV-Cross/build/x64
             cmake --build . --config Release
@@ -21,7 +21,7 @@ commands:
         - |
             cd ../
             export APPLE_ARM64_FLAGS="-target arm64-apple-macos11"
-            export OSX_SYSROOT="/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.0.sdk"
+            export OSX_SYSROOT="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.0.sdk"
             cmake -HSPIRV-Cross -BSPIRV-Cross/build/arm64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=OFF -DCMAKE_CXX_FLAGS="${APPLE_ARM64_FLAGS}" -DCMAKE_C_FLAGS="${APPLE_ARM64_FLAGS}" -DCMAKE_OSX_SYSROOT="${OSX_SYSROOT}"
             cd SPIRV-Cross/build/arm64
             cmake --build . --config Release
