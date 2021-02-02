@@ -3,7 +3,7 @@ agent:
     type: Unity::VM
     image: cds-ops/ubuntu-18.04-katana-agent
     flavor: b1.small
-    
+
 commands:
         - sudo apt-get install ninja-build
         - |
@@ -20,8 +20,8 @@ commands:
             ls
             ar -cq spirv-cross.a *.o
             cd ../
-            mkdir spirv-cross
-            cp "_builds/spirv-cross.a" spirv-cross
+            mkdir -p spirv-cross/linux
+            cp "_builds/spirv-cross.a" spirv-cross/linux
 artifacts:
     builds:
       paths:
