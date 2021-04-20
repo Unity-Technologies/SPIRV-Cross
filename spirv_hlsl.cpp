@@ -1272,7 +1272,7 @@ void CompilerHLSL::replace_illegal_names()
 {
 	static const unordered_set<string> keywords = {
 		// Additional HLSL specific keywords.
-		"line", "linear", "matrix", "point", "row_major", "sampler",
+		"line", "linear", "matrix", "point", "row_major", "sampler", "vector"
 	};
 
 	CompilerGLSL::replace_illegal_names(keywords);
@@ -1362,7 +1362,8 @@ void CompilerHLSL::emit_resources()
 		}
 
 		if (var.storage != StorageClassFunction && !is_builtin_variable(var) && !var.remapped_variable &&
-		    type.pointer && (type.storage == StorageClassUniformConstant || type.storage == StorageClassAtomicCounter))
+		    type.pointer && (type.storage == StorageClassUniformConstant || type.storage == StorageClassAtomicCounter) &&
+		    !is_hidden_variable(var))
 		{
 			emit_uniform(var);
 			emitted = true;
@@ -1516,6 +1517,9 @@ void CompilerHLSL::emit_resources()
 	for (auto global : global_variables)
 	{
 		auto &var = get<SPIRVariable>(global);
+		if (is_hidden_variable(var, true))
+			continue;
+
 		if (var.storage != StorageClassOutput)
 		{
 			if (!variable_is_lut(var))
@@ -4631,12 +4635,8 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 		break;
 
 	case OpGroupNonUniformAllEqual:
-	{
-		auto &type = get<SPIRType>(result_type);
-		emit_unary_func_op(result_type, id, ops[3],
-		                   type.basetype == SPIRType::Boolean ? "WaveActiveAllEqualBool" : "WaveActiveAllEqual");
+		emit_unary_func_op(result_type, id, ops[3], "WaveActiveAllEqual");
 		break;
-	}
 
 	// clang-format off
 #define HLSL_GROUP_OP(op, hlsl_op, supports_scan) \
@@ -4684,6 +4684,9 @@ case OpGroupNonUniform##op: \
 	HLSL_GROUP_OP(BitwiseAnd, BitAnd, false)
 	HLSL_GROUP_OP(BitwiseOr, BitOr, false)
 	HLSL_GROUP_OP(BitwiseXor, BitXor, false)
+	HLSL_GROUP_OP_CAST(LogicalAnd, BitAnd, uint_type)
+	HLSL_GROUP_OP_CAST(LogicalOr, BitOr, uint_type)
+	HLSL_GROUP_OP_CAST(LogicalXor, BitXor, uint_type)
 
 #undef HLSL_GROUP_OP
 #undef HLSL_GROUP_OP_CAST
