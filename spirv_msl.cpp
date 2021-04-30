@@ -11796,7 +11796,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				entry_func.fixup_hooks_in.push_back([=]() {
 					statement(builtin_type_decl(bi_type), " ", to_expression(var_id), " = min(",
 					          to_expression(builtin_invocation_id_id), ".x / ", this->get_entry_point().output_vertices,
-					          ", spvIndirectParams[1]);");
+					          ", spvIndirectParams[1] - 1);");
 				});
 				break;
 			case BuiltInPatchVertices:
@@ -15582,10 +15582,6 @@ void CompilerMSL::analyze_argument_buffers()
 				uint32_t elem_cnt = type.array.empty() ? 1 : to_array_size_literal(type);
 				if (elem_cnt == 0)
 					elem_cnt = get_resource_array_size(var.self);
-
-				// And if the member is a combined image sampler, it takes double the slots
-				if (type.basetype == SPIRType::SampledImage)
-					elem_cnt *= 2;
 
 				next_arg_buff_index += elem_cnt;
 			}
