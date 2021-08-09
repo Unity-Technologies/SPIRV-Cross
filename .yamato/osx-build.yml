@@ -1,7 +1,7 @@
 name: "Mac - Build SPIRV-Cross x64 + arm64"
 agent:
     type: Unity::VM::osx
-    image: desktop/unity-macos-10.15-xcode-12.2:stable
+    image: slough-ops/macos-10.15-base:v0.1.8-749587
     flavor: b1.medium
 
 commands:
