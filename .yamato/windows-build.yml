@@ -1,21 +1,14 @@
 name: "Win - Build SPIRV-Cross"
 agent:
     type: Unity::VM
-    image: cds-ops/win10-vs2017
+    image: desktop/desktop-vs2019:v0.1.0-542248
     flavor: b1.medium
 
 interpreter: powershell
 commands:
         - |
-            choco install python --version=3.7.2
-            choco install cmake --version=3.11.2
-            Push-Location "C:/Program Files (x86)/Microsoft Visual Studio/Installer/"
-            Start-Process ./vs_installershell.exe -ArgumentList 'modify --passive --add Microsoft.VisualStudio.Component.VC.ATL --path install="C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional"' -Wait
-            Pop-Location
-        - |
             cd ..
-            $env:Path += ";C:\Program Files\CMake\bin\;C:\Python37\Scripts\;C:\Python37\"
-            cmake -G "Visual Studio 15 2017 Win64" -HSPIRV-Cross -BSPIRV-Cross/_builds -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON
+            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON
             cd SPIRV-Cross
             cmake --build _builds --config Release
         - |
