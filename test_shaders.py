@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # Copyright 2015-2021 Arm Limited
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -131,6 +132,8 @@ def path_to_msl_standard(shader):
             return '-std=ios-metal2.2'
         elif '.msl23.' in shader:
             return '-std=ios-metal2.3'
+        elif '.msl24.' in shader:
+            return '-std=ios-metal2.4'
         elif '.msl11.' in shader:
             return '-std=ios-metal1.1'
         elif '.msl10.' in shader:
@@ -146,6 +149,8 @@ def path_to_msl_standard(shader):
             return '-std=macos-metal2.2'
         elif '.msl23.' in shader:
             return '-std=macos-metal2.3'
+        elif '.msl24.' in shader:
+            return '-std=macos-metal2.4'
         elif '.msl11.' in shader:
             return '-std=macos-metal1.1'
         else:
@@ -160,6 +165,8 @@ def path_to_msl_standard_cli(shader):
         return '20200'
     elif '.msl23.' in shader:
         return '20300'
+    elif '.msl24.' in shader:
+        return '20400'
     elif '.msl11.' in shader:
         return '10100'
     else:
@@ -185,7 +192,18 @@ def cross_compile_msl(shader, spirv, opt, iterations, paths):
     spirv_path = create_temporary()
     msl_path = create_temporary(os.path.basename(shader))
 
-    spirv_env = 'vulkan1.1spv1.4' if ('.spv14.' in shader) else 'vulkan1.1'
+    spirv_16 = '.spv16.' in shader
+    spirv_14 = '.spv14.' in shader
+
+    if spirv_16:
+        spirv_env = 'spv1.6'
+        glslang_env = 'spirv1.6'
+    elif spirv_14:
+        spirv_env = 'vulkan1.1spv1.4'
+        glslang_env = 'spirv1.4'
+    else:
+        spirv_env = 'vulkan1.1'
+        glslang_env = 'vulkan1.1'
 
     spirv_cmd = [paths.spirv_as, '--target-env', spirv_env, '-o', spirv_path, shader]
     if '.preserve.' in shader:
@@ -194,7 +212,7 @@ def cross_compile_msl(shader, spirv, opt, iterations, paths):
     if spirv:
         subprocess.check_call(spirv_cmd)
     else:
-        subprocess.check_call([paths.glslang, '--amb' ,'--target-env', 'vulkan1.1', '-V', '-o', spirv_path, shader])
+        subprocess.check_call([paths.glslang, '--amb' ,'--target-env', glslang_env, '-V', '-o', spirv_path, shader])
 
     if opt and (not shader_is_invalid_spirv(shader)):
         if '.graphics-robust-access.' in shader:
@@ -341,11 +359,13 @@ def cross_compile_msl(shader, spirv, opt, iterations, paths):
     if '.mask-clip-distance.' in shader:
         msl_args.append('--mask-stage-output-builtin')
         msl_args.append('ClipDistance')
+    if '.relax-nan.' in shader:
+        msl_args.append('--relax-nan-checks')
 
     subprocess.check_call(msl_args)
 
     if not shader_is_invalid_spirv(msl_path):
-        subprocess.check_call([paths.spirv_val, '--scalar-block-layout', '--target-env', spirv_env, spirv_path])
+        subprocess.check_call([paths.spirv_val, '--allow-localsizeid', '--scalar-block-layout', '--target-env', spirv_env, spirv_path])
 
     return (spirv_path, msl_path)
 
@@ -431,7 +451,19 @@ def cross_compile_hlsl(shader, spirv, opt, force_no_external_validation, iterati
     spirv_path = create_temporary()
     hlsl_path = create_temporary(os.path.basename(shader))
 
-    spirv_env = 'vulkan1.1spv1.4' if '.spv14.' in shader else 'vulkan1.1'
+    spirv_16 = '.spv16.' in shader
+    spirv_14 = '.spv14.' in shader
+
+    if spirv_16:
+        spirv_env = 'spv1.6'
+        glslang_env = 'spirv1.6'
+    elif spirv_14:
+        spirv_env = 'vulkan1.1spv1.4'
+        glslang_env = 'spirv1.4'
+    else:
+        spirv_env = 'vulkan1.1'
+        glslang_env = 'vulkan1.1'
+
     spirv_cmd = [paths.spirv_as, '--target-env', spirv_env, '-o', spirv_path, shader]
     if '.preserve.' in shader:
         spirv_cmd.append('--preserve-numeric-ids')
@@ -439,7 +471,7 @@ def cross_compile_hlsl(shader, spirv, opt, force_no_external_validation, iterati
     if spirv:
         subprocess.check_call(spirv_cmd)
     else:
-        subprocess.check_call([paths.glslang, '--amb', '--target-env', 'vulkan1.1', '-V', '-o', spirv_path, shader])
+        subprocess.check_call([paths.glslang, '--amb', '--target-env', glslang_env, '-V', '-o', spirv_path, shader])
 
     if opt and (not shader_is_invalid_spirv(hlsl_path)):
         subprocess.check_call([paths.spirv_opt, '--skip-validation', '-O', '-o', spirv_path, spirv_path])
@@ -451,6 +483,8 @@ def cross_compile_hlsl(shader, spirv, opt, force_no_external_validation, iterati
     hlsl_args = [spirv_cross_path, '--entry', 'main', '--output', hlsl_path, spirv_path, '--hlsl-enable-compat', '--hlsl', '--shader-model', sm, '--iterations', str(iterations)]
     if '.line.' in shader:
         hlsl_args.append('--emit-line-directives')
+    if '.flatten.' in shader:
+        hlsl_args.append('--flatten-ubo')
     if '.force-uav.' in shader:
         hlsl_args.append('--hlsl-force-storage-buffer-as-uav')
     if '.zero-initialize.' in shader:
@@ -461,11 +495,13 @@ def cross_compile_hlsl(shader, spirv, opt, force_no_external_validation, iterati
         hlsl_args.append('--hlsl-enable-16bit-types')
     if '.flatten-matrix-vertex-input.' in shader:
         hlsl_args.append('--hlsl-flatten-matrix-vertex-input-semantics')
+    if '.relax-nan.' in shader:
+        hlsl_args.append('--relax-nan-checks')
 
     subprocess.check_call(hlsl_args)
 
     if not shader_is_invalid_spirv(hlsl_path):
-        subprocess.check_call([paths.spirv_val, '--scalar-block-layout', '--target-env', spirv_env, spirv_path])
+        subprocess.check_call([paths.spirv_val, '--allow-localsizeid', '--scalar-block-layout', '--target-env', spirv_env, spirv_path])
 
     validate_shader_hlsl(hlsl_path, force_no_external_validation, paths)
 
@@ -501,12 +537,21 @@ def validate_shader(shader, vulkan, paths):
     else:
         subprocess.check_call([paths.glslang, shader])
 
-def cross_compile(shader, vulkan, spirv, invalid_spirv, eliminate, is_legacy, flatten_ubo, sso, flatten_dim, opt, push_ubo, iterations, paths):
+def cross_compile(shader, vulkan, spirv, invalid_spirv, eliminate, is_legacy, force_es, flatten_ubo, sso, flatten_dim, opt, push_ubo, iterations, paths):
     spirv_path = create_temporary()
     glsl_path = create_temporary(os.path.basename(shader))
 
+    spirv_16 = '.spv16.' in shader
     spirv_14 = '.spv14.' in shader
-    spirv_env = 'vulkan1.1spv1.4' if spirv_14 else 'vulkan1.1'
+    if spirv_16:
+        spirv_env = 'spv1.6'
+        glslang_env = 'spirv1.6'
+    elif spirv_14:
+        spirv_env = 'vulkan1.1spv1.4'
+        glslang_env = 'spirv1.4'
+    else:
+        spirv_env = 'vulkan1.1'
+        glslang_env = 'vulkan1.1'
 
     if vulkan or spirv:
         vulkan_glsl_path = create_temporary('vk' + os.path.basename(shader))
@@ -518,20 +563,21 @@ def cross_compile(shader, vulkan, spirv, invalid_spirv, eliminate, is_legacy, fl
     if spirv:
         subprocess.check_call(spirv_cmd)
     else:
-        glslang_env = 'spirv1.4' if spirv_14 else 'vulkan1.1'
         subprocess.check_call([paths.glslang, '--amb', '--target-env', glslang_env, '-V', '-o', spirv_path, shader])
 
     if opt and (not invalid_spirv):
         subprocess.check_call([paths.spirv_opt, '--skip-validation', '-O', '-o', spirv_path, spirv_path])
 
     if not invalid_spirv:
-        subprocess.check_call([paths.spirv_val, '--scalar-block-layout', '--target-env', spirv_env, spirv_path])
+        subprocess.check_call([paths.spirv_val, '--allow-localsizeid', '--scalar-block-layout', '--target-env', spirv_env, spirv_path])
 
     extra_args = ['--iterations', str(iterations)]
     if eliminate:
         extra_args += ['--remove-unused-variables']
     if is_legacy:
         extra_args += ['--version', '100', '--es']
+    if force_es:
+        extra_args += ['--version', '310', '--es']
     if flatten_ubo:
         extra_args += ['--flatten-ubo']
     if sso:
@@ -551,10 +597,14 @@ def cross_compile(shader, vulkan, spirv, invalid_spirv, eliminate, is_legacy, fl
         extra_args += ['--glsl-remap-ext-framebuffer-fetch', '1', '1']
         extra_args += ['--glsl-remap-ext-framebuffer-fetch', '2', '2']
         extra_args += ['--glsl-remap-ext-framebuffer-fetch', '3', '3']
+    if '.framebuffer-fetch-noncoherent.' in shader:
+        extra_args += ['--glsl-ext-framebuffer-fetch-noncoherent']
     if '.zero-initialize.' in shader:
         extra_args += ['--force-zero-initialized-variables']
     if '.force-flattened-io.' in shader:
         extra_args += ['--glsl-force-flattened-io-blocks']
+    if '.relax-nan.' in shader:
+        extra_args.append('--relax-nan-checks')
 
     spirv_cross_path = paths.spirv_cross
 
@@ -616,13 +666,22 @@ def regression_check_reflect(shader, json_file, args):
                 shutil.move(json_file, reference)
             else:
                 print('Generated reflection json in {} does not match reference {}!'.format(json_file, reference))
-                with open(json_file, 'r') as f:
-                    print('')
-                    print('Generated:')
-                    print('======================')
-                    print(f.read())
-                    print('======================')
-                    print('')
+                if args.diff:
+                    diff_path = generate_diff_file(reference, glsl)
+                    with open(diff_path, 'r') as f:
+                        print('')
+                        print('Diff:')
+                        print(f.read())
+                        print('')
+                    remove_file(diff_path)
+                else:
+                    with open(json_file, 'r') as f:
+                        print('')
+                        print('Generated:')
+                        print('======================')
+                        print(f.read())
+                        print('======================')
+                        print('')
 
                 # Otherwise, fail the test. Keep the shader file around so we can inspect.
                 if not args.keep:
@@ -635,6 +694,19 @@ def regression_check_reflect(shader, json_file, args):
         print('Found new shader {}. Placing generated source code in {}'.format(joined_path, reference))
         make_reference_dir(reference)
         shutil.move(json_file, reference)
+
+def generate_diff_file(origin, generated):
+    diff_destination = create_temporary()
+    with open(diff_destination, "w") as f:
+        try:
+            subprocess.check_call(["diff", origin, generated], stdout=f)
+        except subprocess.CalledProcessError as e:
+            # diff returns 1 when the files are different so we can safely
+            # ignore this case.
+            if e.returncode != 1:
+                raise e
+
+    return diff_destination
 
 def regression_check(shader, glsl, args):
     reference = reference_path(shader[0], shader[1], args.opt)
@@ -652,13 +724,22 @@ def regression_check(shader, glsl, args):
                 shutil.move(glsl, reference)
             else:
                 print('Generated source code in {} does not match reference {}!'.format(glsl, reference))
-                with open(glsl, 'r') as f:
-                    print('')
-                    print('Generated:')
-                    print('======================')
-                    print(f.read())
-                    print('======================')
-                    print('')
+                if args.diff:
+                    diff_path = generate_diff_file(reference, glsl)
+                    with open(diff_path, 'r') as f:
+                        print('')
+                        print('Diff:')
+                        print(f.read())
+                        print('')
+                    remove_file(diff_path)
+                else:
+                    with open(glsl, 'r') as f:
+                        print('')
+                        print('Generated:')
+                        print('======================')
+                        print(f.read())
+                        print('======================')
+                        print('')
 
                 # Otherwise, fail the test. Keep the shader file around so we can inspect.
                 if not args.keep:
@@ -689,6 +770,9 @@ def shader_is_invalid_spirv(shader):
 def shader_is_legacy(shader):
     return '.legacy.' in shader
 
+def shader_is_force_es(shader):
+    return '.es.' in shader
+
 def shader_is_flatten_ubo(shader):
     return '.flatten.' in shader
 
@@ -712,6 +796,7 @@ def test_shader(stats, shader, args, paths):
     is_spirv = shader_is_spirv(shader[1])
     invalid_spirv = shader_is_invalid_spirv(shader[1])
     is_legacy = shader_is_legacy(shader[1])
+    force_es = shader_is_force_es(shader[1])
     flatten_ubo = shader_is_flatten_ubo(shader[1])
     sso = shader_is_sso(shader[1])
     flatten_dim = shader_is_flatten_dimensions(shader[1])
@@ -719,7 +804,7 @@ def test_shader(stats, shader, args, paths):
     push_ubo = shader_is_push_ubo(shader[1])
 
     print('Testing shader:', joined_path)
-    spirv, glsl, vulkan_glsl = cross_compile(joined_path, vulkan, is_spirv, invalid_spirv, eliminate, is_legacy, flatten_ubo, sso, flatten_dim, args.opt and (not noopt), push_ubo, args.iterations, paths)
+    spirv, glsl, vulkan_glsl = cross_compile(joined_path, vulkan, is_spirv, invalid_spirv, eliminate, is_legacy, force_es, flatten_ubo, sso, flatten_dim, args.opt and (not noopt), push_ubo, args.iterations, paths)
 
     # Only test GLSL stats if we have a shader following GL semantics.
     if stats and (not vulkan) and (not is_spirv) and (not desktop):
@@ -761,7 +846,8 @@ def test_shader_msl(stats, shader, args, paths):
 
     shader_is_msl22 = 'msl22' in joined_path
     shader_is_msl23 = 'msl23' in joined_path
-    skip_validation = (shader_is_msl22 and (not args.msl22)) or (shader_is_msl23 and (not args.msl23))
+    shader_is_msl24 = 'msl24' in joined_path
+    skip_validation = (shader_is_msl22 and (not args.msl22)) or (shader_is_msl23 and (not args.msl23)) or (shader_is_msl24 and (not args.msl24))
     if '.invalid.' in joined_path:
         skip_validation = True
 
@@ -855,6 +941,9 @@ def main():
     parser.add_argument('--keep',
             action = 'store_true',
             help = 'Leave failed GLSL shaders on disk if they fail regression. Useful for debugging.')
+    parser.add_argument('--diff',
+            action = 'store_true',
+            help = 'Displays a diff instead of the generated output on failure. Useful for debugging.')
     parser.add_argument('--malisc',
             action = 'store_true',
             help = 'Use malisc offline compiler to determine static cycle counts before and after spirv-cross.')
@@ -910,10 +999,12 @@ def main():
 
     args.msl22 = False
     args.msl23 = False
+    args.msl24 = False
     if args.msl:
         print_msl_compiler_version()
         args.msl22 = msl_compiler_supports_version('2.2')
         args.msl23 = msl_compiler_supports_version('2.3')
+        args.msl24 = msl_compiler_supports_version('2.4')
 
     backend = 'glsl'
     if (args.msl or args.metal):
