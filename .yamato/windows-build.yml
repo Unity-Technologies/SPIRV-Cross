@@ -14,8 +14,8 @@ commands:
             cmake --build _builds --config Release
         - |
             md -force .\spirv-cross\windows\x64
-            Copy-Item "_builds/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\x64
-            Copy-Item "_builds/Release/spirv-cross-c-shared.lib" .\spirv-cross\windows\x64
+            Copy-Item "_builds/x86_64/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\x64
+            Copy-Item "_builds/x86_64/Release/spirv-cross-c-shared.lib" .\spirv-cross\windows\x64
         - |
             export WINDOWS_ARM64_FLAGS="-target arm64-windows-dynamic"
             cd ..
@@ -24,8 +24,8 @@ commands:
             cmake --build _builds --config Release
         - |
             md -force .\spirv-cross\windows\arm64
-            Copy-Item "_builds/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\arm64
-            Copy-Item "_builds/Release/spirv-cross-c-shared.lib" .\spirv-cross\windows\arm64
+            Copy-Item "_builds/arm64/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\arm64
+            Copy-Item "_builds/arm64/Release/spirv-cross-c-shared.lib" .\spirv-cross\windows\arm64
 artifacts:
     builds:
       paths:
