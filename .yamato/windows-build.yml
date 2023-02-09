@@ -7,14 +7,25 @@ agent:
 interpreter: powershell
 commands:
         - |
+            export WINDOWS_X64_FLAGS="-target x86_64-windows-dynamic"
             cd ..
-            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON
+            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds/x86_64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON -DCMAKE_CXX_FLAGS="${WINDOWS_X64_FLAGS}" -DCMAKE_C_FLAGS="${WINDOWS_X64_FLAGS}"
             cd SPIRV-Cross
             cmake --build _builds --config Release
         - |
-            md -force .\spirv-cross\win
-            Copy-Item "_builds/Release/spirv-cross-c-shared.dll" .\spirv-cross\win
-            Copy-Item "_builds/Release/spirv-cross-c-shared.lib" .\spirv-cross\win
+            md -force .\spirv-cross\windows\x64
+            Copy-Item "_builds/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\x64
+            Copy-Item "_builds/Release/spirv-cross-c-shared.lib" .\spirv-cross\windows\x64
+        - |
+            export WINDOWS_ARM64_FLAGS="-target arm64-windows-dynamic"
+            cd ..
+            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds/arm64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON -DCMAKE_CXX_FLAGS="${WINDOWS_ARM64_FLAGS}" -DCMAKE_C_FLAGS="${WINDOWS_ARM64_FLAGS}"
+            cd SPIRV-Cross
+            cmake --build _builds --config Release
+        - |
+            md -force .\spirv-cross\windows\arm64
+            Copy-Item "_builds/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\arm64
+            Copy-Item "_builds/Release/spirv-cross-c-shared.lib" .\spirv-cross\windows\arm64
 artifacts:
     builds:
       paths:
