@@ -448,7 +448,7 @@ protected:
 		TextureFunctionArguments() = default;
 		TextureFunctionBaseArguments base;
 		uint32_t coord = 0, coord_components = 0, dref = 0;
-		uint32_t grad_x = 0, grad_y = 0, lod = 0, coffset = 0, offset = 0;
+		uint32_t grad_x = 0, grad_y = 0, lod = 0, offset = 0;
 		uint32_t bias = 0, component = 0, sample = 0, sparse_texel = 0, min_lod = 0;
 		bool nonuniform_expression = false;
 	};
@@ -602,6 +602,7 @@ protected:
 		bool allow_precision_qualifiers = false;
 		bool can_swizzle_scalar = false;
 		bool force_gl_in_out_block = false;
+		bool force_merged_mesh_block = false;
 		bool can_return_array = true;
 		bool allow_truncated_access_chain = false;
 		bool supports_extensions = false;
@@ -769,7 +770,7 @@ protected:
 	std::string address_of_expression(const std::string &expr);
 	void strip_enclosed_expression(std::string &expr);
 	std::string to_member_name(const SPIRType &type, uint32_t index);
-	virtual std::string to_member_reference(uint32_t base, const SPIRType &type, uint32_t index, bool ptr_chain);
+	virtual std::string to_member_reference(uint32_t base, const SPIRType &type, uint32_t index, bool ptr_chain_is_resolved);
 	std::string to_multi_member_reference(const SPIRType &type, const SmallVector<uint32_t> &indices);
 	std::string type_to_glsl_constructor(const SPIRType &type);
 	std::string argument_decl(const SPIRFunction::Parameter &arg);
@@ -936,8 +937,6 @@ protected:
 
 	bool type_is_empty(const SPIRType &type);
 
-	virtual void declare_undefined_values();
-
 	bool can_use_io_location(spv::StorageClass storage, bool block);
 	const Instruction *get_next_instruction_in_block(const Instruction &instr);
 	static uint32_t mask_relevant_memory_semantics(uint32_t semantics);
@@ -982,6 +981,7 @@ protected:
 	bool is_stage_output_builtin_masked(spv::BuiltIn builtin) const;
 	bool is_stage_output_variable_masked(const SPIRVariable &var) const;
 	bool is_stage_output_block_member_masked(const SPIRVariable &var, uint32_t index, bool strip_array) const;
+	bool is_per_primitive_variable(const SPIRVariable &var) const;
 	uint32_t get_accumulated_member_location(const SPIRVariable &var, uint32_t mbr_idx, bool strip_array) const;
 	uint32_t get_declared_member_location(const SPIRVariable &var, uint32_t mbr_idx, bool strip_array) const;
 	std::unordered_set<LocationComponentPair, InternalHasher> masked_output_locations;
@@ -989,6 +989,12 @@ protected:
 
 private:
 	void init();
+
+	SmallVector<ConstantID> get_composite_constant_ids(ConstantID const_id);
+	void fill_composite_constant(SPIRConstant &constant, TypeID type_id, const SmallVector<ConstantID> &initializers);
+	void set_composite_constant(ConstantID const_id, TypeID type_id, const SmallVector<ConstantID> &initializers);
+	TypeID get_composite_member_type(TypeID type_id, uint32_t member_idx);
+	std::unordered_map<uint32_t, SmallVector<ConstantID>> const_composite_insert_ids;
 };
 } // namespace SPIRV_CROSS_NAMESPACE
 
