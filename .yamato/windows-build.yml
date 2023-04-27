@@ -1,27 +1,25 @@
 name: "Win - Build SPIRV-Cross"
 agent:
     type: Unity::VM
-    image: desktop/desktop-vs2019:v0.1.0-542248
+    image: desktop/win10-vs2019-cmake:latest
     flavor: b1.medium
 
 interpreter: powershell
 commands:
         - |
-            export WINDOWS_X64_FLAGS="-target x86_64-windows-dynamic"
             cd ..
-            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds/x86_64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON -DCMAKE_CXX_FLAGS="${WINDOWS_X64_FLAGS}" -DCMAKE_C_FLAGS="${WINDOWS_X64_FLAGS}"
+            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds/x64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON -A x64
             cd SPIRV-Cross
-            cmake --build _builds --config Release
+            cmake --build _builds/x64 --config Release
         - |
             md -force .\spirv-cross\windows\x64
-            Copy-Item "_builds/x86_64/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\x64
-            Copy-Item "_builds/x86_64/Release/spirv-cross-c-shared.lib" .\spirv-cross\windows\x64
+            Copy-Item "_builds/x64/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\x64
+            Copy-Item "_builds/x64/Release/spirv-cross-c-shared.lib" .\spirv-cross\windows\x64
         - |
-            export WINDOWS_ARM64_FLAGS="-target arm64-windows-dynamic"
             cd ..
-            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds/arm64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON -DCMAKE_CXX_FLAGS="${WINDOWS_ARM64_FLAGS}" -DCMAKE_C_FLAGS="${WINDOWS_ARM64_FLAGS}"
+            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds/arm64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON -A ARM64
             cd SPIRV-Cross
-            cmake --build _builds --config Release
+            cmake --build _builds/arm64 --config Release
         - |
             md -force .\spirv-cross\windows\arm64
             Copy-Item "_builds/arm64/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\arm64
