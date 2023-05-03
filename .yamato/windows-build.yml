@@ -1,20 +1,29 @@
 name: "Win - Build SPIRV-Cross"
 agent:
     type: Unity::VM
-    image: desktop/desktop-vs2019:v0.1.0-542248
+    image: desktop/win10-vs2019-cmake:latest
     flavor: b1.medium
 
 interpreter: powershell
 commands:
         - |
             cd ..
-            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON
+            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds/x64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON -A x64
             cd SPIRV-Cross
-            cmake --build _builds --config Release
+            cmake --build _builds/x64 --config Release
         - |
-            md -force .\spirv-cross\win
-            Copy-Item "_builds/Release/spirv-cross-c-shared.dll" .\spirv-cross\win
-            Copy-Item "_builds/Release/spirv-cross-c-shared.lib" .\spirv-cross\win
+            md -force .\spirv-cross\windows\x64
+            Copy-Item "_builds/x64/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\x64
+            Copy-Item "_builds/x64/Release/spirv-cross-c-shared.lib" .\spirv-cross\windows\x64
+        - |
+            cd ..
+            cmake -HSPIRV-Cross -BSPIRV-Cross/_builds/arm64 -DSPIRV_CROSS_STATIC=ON -DSPIRV_CROSS_SHARED=ON -A ARM64
+            cd SPIRV-Cross
+            cmake --build _builds/arm64 --config Release
+        - |
+            md -force .\spirv-cross\windows\arm64
+            Copy-Item "_builds/arm64/Release/spirv-cross-c-shared.dll" .\spirv-cross\windows\arm64
+            Copy-Item "_builds/arm64/Release/spirv-cross-c-shared.lib" .\spirv-cross\windows\arm64
 artifacts:
     builds:
       paths:
